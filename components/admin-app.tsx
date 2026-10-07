@@ -7,6 +7,7 @@ import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/u
 import {SiteHeader,SiteFooter,MonthNav,CalendarBoard,SlotTime} from '@/components/schedule-ui';
 import {useSchedule} from '@/hooks/use-schedule';
 import {api,Booking,BookingStatus,Slot,dateLabel,phoneLabel,statusLabels,smsText,seoulNow,futureSlot} from '@/lib/schedule';
+import {PUBLIC_URL} from '@/lib/deployment';
 type Tab='schedule'|'requests'|'share';
 type Confirm={booking:Booking;action:'reject'|'cancel'};
 export default function AdminApp({initialMonth,email}:{initialMonth:string;email:string}) {
@@ -21,7 +22,7 @@ export default function AdminApp({initialMonth,email}:{initialMonth:string;email
   useEffect(()=>{if(!message)return;const timer=setTimeout(()=>setMessage(''),4500);return ()=>clearTimeout(timer);},[message]);
   useEffect(()=>{
     if(tab!=='share')return;let cancelled=false;
-    const url=window.location.origin+'/';setShareUrl(url);
+    const url=PUBLIC_URL;setShareUrl(url);
     import('qrcode').then(q=>q.toDataURL(url,{width:640,margin:4,errorCorrectionLevel:'M',color:{dark:'#172b48',light:'#ffffff'}})).then(data=>{if(!cancelled){setQr(data);setQrError('');}}).catch(()=>{if(!cancelled)setQrError('QR코드를 만들지 못했습니다. 화면을 다시 열어 주세요.');});
     return ()=>{cancelled=true;};
   },[tab]);

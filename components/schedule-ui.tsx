@@ -2,8 +2,8 @@
 import { ChevronLeft, ChevronRight, Flame, CalendarDays, Clock3, ShieldCheck } from 'lucide-react';
 import { Slot,monthLabel,shiftMonth,seoulNow,endTime } from '@/lib/schedule';
 import { Button } from '@/components/ui/button';
-export function SiteHeader({admin=false,email}:{admin?:boolean;email?:string}) {
-  return <header className="site-header"><div className="header-inner"><a className="brand" href="/"><span className="brand-mark"><Flame size={23} aria-hidden="true"/></span><span>소방훈련 일정<small>특정소방대상물 훈련 일정 관리</small></span></a><nav aria-label="주 메뉴"><a href="/" className={!admin?'active':''}>훈련 신청</a><a href="/admin" className={admin?'active':''}>관리자</a></nav>{email ? <a className="account-link" href="/signout-with-chatgpt?return_to=%2F" target="_top">로그아웃</a> : null}</div></header>;
+export function SiteHeader({admin=false,email,homeUrl="/",adminUrl="/admin"}:{admin?:boolean;email?:string;homeUrl?:string;adminUrl?:string}) {
+  return <header className="site-header"><div className="header-inner"><a className="brand" href={homeUrl}><span className="brand-mark"><Flame size={23} aria-hidden="true"/></span><span>소방훈련 일정<small>특정소방대상물 훈련 일정 관리</small></span></a><nav aria-label="주 메뉴"><a href={homeUrl} className={!admin?'active':''}>훈련 신청</a><a href={adminUrl} className={admin?'active':''}>관리자</a></nav>{email ? <a className="account-link" href="/signout-with-chatgpt?return_to=%2F" target="_top">로그아웃</a> : null}</div></header>;
 }
 export function MonthNav({month,onChange,admin=false}:{month:string;onChange:(m:string)=>void;admin?:boolean}) {
   return <div className="month-nav"><h2>{monthLabel(month)}</h2><div className="month-buttons"><Button variant="ghost" className="icon-btn" aria-label="이전 달" disabled={!admin&&month<=seoulNow().month} onClick={()=>onChange(shiftMonth(month,-1))}><ChevronLeft/></Button><Button variant="ghost" className="icon-btn" aria-label="다음 달" onClick={()=>onChange(shiftMonth(month,1))}><ChevronRight/></Button></div></div>;

@@ -5,7 +5,14 @@ async function request(path,method='GET',data,auth=false,extra={}) {
  const response=await fetch(origin+path,{method,headers:{'Content-Type':'application/json',Origin:origin,...(auth?{Cookie:cookie}:{}),...extra},...(data?{body:JSON.stringify(data)}:{})});
  const raw=await response.text();let result;try{result=JSON.parse(raw);}catch{result={error:raw};}return {status:response.status,data:result};
 }
-const future=new Date(Date.now()+9*3600000+14*86400000).toISOString().slice(0,10);
+let future;
+for(let offset=14;offset<75;offset++){
+ const day=new Date(Date.now()+9*3600000+offset*86400000).toISOString().slice(0,10);
+ const existing=await request('/api/admin/schedule?month='+day.slice(0,7),'GET',undefined,true);
+ assert.equal(existing.status,200);
+ if(!existing.data.slots.some(s=>s.day===day)){future=day;break;}
+}
+assert.ok(future,'No empty local test day found');
 const month=future.slice(0,7);
 const report=[];
 async function expect(label,promise,status){const r=await promise;assert.equal(r.status,status,`${label}: ${JSON.stringify(r)}`);report.push(label);return r.data;}
@@ -19,7 +26,7 @@ const s3=await expect('Register third slot',request('/api/admin/slots','POST',{d
 await expect('Fourth daily slot denied',request('/api/admin/slots','POST',{day:future,time:'11:00'},true),409);
 await expect('Invalid calendar date denied',request('/api/admin/slots','POST',{day:'2027-02-30',time:'09:00'},true),400);
 await expect('Invalid phone denied',request('/api/bookings','POST',{slotId:s1.id,targetName:'검증대상',managerName:'검증담당',phone:'wrong'}),400);
-const racers=await Promise.all(['검증대상 A','검증대상 B'].map(targetName=>request('/api/bookings','POST',{slotId:s1.id,targetName,managerName:'검증담당',phone:'01000000000'})));
+const racers=await Promise.all(['검증대상 A','검증대상 B'].map(targetName=>request('/api/bookings','POST',{slotId:s1.id,targetName,managerName:'검증담당',phone:'01000000000'},false,{Origin:'https://lee-seongwouk.github.io'})));
 assert.deepEqual(racers.map(r=>r.status).sort(),[201,409]);report.push('Concurrent applicants: exactly one reservation');
 const winner=racers.find(r=>r.status===201).data;
 const listing=await request('/api/schedule?month='+month);
@@ -38,5 +45,7 @@ const moved=await request('/api/schedule?month='+month);assert.equal(moved.data.
 await expect('Cancel approved booking',request('/api/admin/bookings','PATCH',{id:b2.id,action:'cancel'},true),200);
 const cancelled=await request('/api/schedule?month='+month);assert.equal(cancelled.data.slots.find(s=>s.id===s2.id).available,true);report.push('Cancel reopens slot');
 await expect('Delete available slot',request('/api/admin/slots','DELETE',{id:s3.id},true),200);
+await expect('Clean up first test slot',request('/api/admin/slots','DELETE',{id:s1.id},true),200);
+await expect('Clean up second test slot',request('/api/admin/slots','DELETE',{id:s2.id},true),200);
 console.log(JSON.stringify({passed:report.length,checks:report},null,2));
 

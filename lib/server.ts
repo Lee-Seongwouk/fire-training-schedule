@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { getChatGPTUser } from '@/app/chatgpt-auth';
+import { PUBLIC_ORIGIN } from '@/lib/deployment';
 export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
@@ -24,9 +25,28 @@ export async function handle(action: () => Promise<Response>) {
     return json({error:'일정을 처리하지 못했습니다. 입력 내용은 유지됩니다. 잠시 후 다시 시도해 주세요.'},503);
   }
 }
-export async function body(request: Request) {
+// Only the two anonymous booking endpoints accept the GitHub Pages origin.
+export async function publicHandle(request: Request, action: () => Promise<Response>) {
   const origin=request.headers.get('origin');
-  if(origin && origin !== new URL(request.url).origin) throw new HttpError(403,'이 페이지에서 다시 시도해 주세요.');
+  if(origin && origin!==new URL(request.url).origin && origin!==PUBLIC_ORIGIN) return json({error:'이 페이지에서 다시 시도해 주세요.'},403);
+  const response=await handle(action);
+  if(origin===PUBLIC_ORIGIN) {
+    response.headers.set('Access-Control-Allow-Origin',PUBLIC_ORIGIN);
+    response.headers.set('Vary','Origin');
+  }
+  return response;
+}
+export async function publicPreflight(request: Request, method: 'GET'|'POST') {
+  return publicHandle(request,async()=> {
+    if(request.headers.get('access-control-request-method')!==method) throw new HttpError(405,'허용되지 않은 요청입니다.');
+    const requested=request.headers.get('access-control-request-headers')?.toLowerCase().split(',').map(s=>s.trim())??[];
+    if(requested.some(h=>h!=='content-type')) throw new HttpError(403,'허용되지 않은 요청입니다.');
+    return new Response(null,{status:204,headers:{'Access-Control-Allow-Methods':method,'Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600','Cache-Control':'no-store'}});
+  });
+}
+export async function body(request: Request, publicBooking=false) {
+  const origin=request.headers.get('origin');
+  if(origin && origin !== new URL(request.url).origin && !(publicBooking && origin===PUBLIC_ORIGIN)) throw new HttpError(403,'이 페이지에서 다시 시도해 주세요.');
   if(!request.headers.get('content-type')?.includes('application/json')) throw new HttpError(400,'올바른 형식으로 입력해 주세요.');
   const raw=await request.text();
   if(raw.length>4000) throw new HttpError(400,'입력 내용이 너무 깁니다.');

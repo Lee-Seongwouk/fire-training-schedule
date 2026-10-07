@@ -42,7 +42,7 @@ export function targetKey(name: string) {
   return name.normalize('NFKC').toLocaleLowerCase('ko-KR').replace(/[\s\p{P}\p{S}]/gu, '');
 }
 export async function api<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...options, cache: 'no-store', headers: { 'Content-Type': 'application/json', ...options?.headers } });
+  const response = await fetch(url, { ...options, cache: 'no-store', headers: { ...(options?.body ? {'Content-Type': 'application/json'} : {}), ...options?.headers } });
   let data: unknown;
   try { data = await response.json(); } catch { throw new Error('연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.'); }
   if(!response.ok) throw new Error(data && typeof data==='object' && 'error' in data && typeof data.error==='string' ? data.error : '요청을 처리하지 못했습니다. 다시 시도해 주세요.');

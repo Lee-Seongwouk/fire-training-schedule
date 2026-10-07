@@ -24,4 +24,15 @@ Node.js 22.13 이상을 사용합니다. `npm ci`, `npm run db:generate`, `npm r
 
 ## 검증
 
-`node scripts/verify-schedule.mjs`는 실행 중인 로컬 서버(127.0.0.1:5173)에 대해 권한 검사, 동시 신청, 중복 제한, 시간 간격, 승인·반려·변경·취소 등 24개 검증을 수행합니다. 실제 게시 사이트를 대상으로 실행하지 마세요.
+`node scripts/verify-schedule.mjs`는 실행 중인 로컬 서버(127.0.0.1:5173)에 대해 권한 검사, 동시 신청, 중복 제한, 시간 간격, 승인·반려·변경·취소 등 26개 검증을 수행합니다. 실제 게시 사이트를 대상으로 실행하지 마세요.
+
+## GitHub Pages 배포
+
+- 신청 화면: https://lee-seongwouk.github.io/fire-training-schedule/
+- 관리자 화면 및 예약 API: https://fire-training-schedule.livefuuly.chatgpt.site/admin
+
+GitHub Pages는 정적 화면을 호스팅합니다. 실제 예약은 기존 Sites 서버와 D1에 저장하고, 관리자 로그인은 ChatGPT 계정을 사용합니다. 신청 화면은 `github-pages/main.tsx`에서 공통 React 화면을 사용하며, `lib/deployment.ts`에 연결 주소가 있습니다.
+
+`npm ci` 후 `npm run build:pages`로 `docs/`를 생성합니다. 생성된 `docs/`와 변경한 소스를 커밋하고 `main`에 푸시하면 GitHub Pages가 배포합니다. 저장소 Settings → Pages의 소스는 `main` 브랜치의 `/docs`입니다. `.nojekyll`은 Vite 출력 파일을 그대로 게시하도록 유지합니다.
+
+서버 코드를 변경하면 기존 Sites 서버도 별도로 다시 배포해야 합니다. GitHub Pages 주소에서 공개 일정 조회와 신청만 교차 출처로 허용합니다. 관리자 API는 관리자 인증과 같은 출처 검사를 계속 적용합니다. 개인정보와 인증 비밀은 저장소와 정적 배포 파일에 포함하지 않습니다.

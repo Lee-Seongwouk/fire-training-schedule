@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { body,database,handle,HttpError,json } from '@/lib/server';
+import { body,database,publicHandle,publicPreflight,HttpError,json } from '@/lib/server';
 import { futureSlot,targetKey } from '@/lib/schedule';
 export const dynamic='force-dynamic';
 const input=z.object({slotId:z.string().uuid(),targetName:z.string().trim().min(2).max(80),managerName:z.string().trim().min(2).max(30),phone:z.string().max(30)});
 export async function POST(request: Request) {
-  return handle(async()=> {
-    const parsed=input.safeParse(await body(request));
+  return publicHandle(request,async()=> {
+    const parsed=input.safeParse(await body(request,true));
     if(!parsed.success) throw new HttpError(400,'대상물명과 관리자 이름을 2자 이상 입력하고 훈련 시간을 선택해 주세요.');
     const d=parsed.data;
     const phone=d.phone.replace(/[\s()-]/g,'');
@@ -32,3 +32,4 @@ export async function POST(request: Request) {
     return json({id,status:'pending',day:slot.day,time:slot.time},201);
   });
 }
+export function OPTIONS(request:Request) {return publicPreflight(request,'POST');}
